@@ -75,3 +75,11 @@ No production-ready claim follows from passing these local tests.
 ## GitHub checks
 
 The Voter Python Tests workflow runs demo and the full unittest suite on push, pull request, or manual dispatch using Python 3.12 on Ubuntu. Local validation is recorded in VALIDATION.txt; check the Actions tab for hosted-run results. The pre-existing azure-webapps-node.yml contains Python outside YAML and is malformed; it is preserved for separate cleanup and may show its own workflow error.
+
+## Private web application
+
+Live owner-private workspace: https://abir-voter-agent.dawanmdabirmahmud.chatgpt.site
+
+The complete web adaptation is in [`web/`](web/README.md), including its D1 schema, migration, UI, API and 19-test suite. Sign in with the owner ChatGPT account to open the app, then choose **New election**. Use synthetic voter IDs only. This is an admin simulator, not individual voter authentication or a certified secret-ballot system.
+
+The Python implementation above remains runnable from the repository root. The web app uses TypeScript/JavaScript and D1 on Sites; GitHub hosts the source mirror, while Sites hosts the running application. A GitHub push alone does not redeploy the Site. Web validation limits are recorded in `web/VALIDATION.md`.

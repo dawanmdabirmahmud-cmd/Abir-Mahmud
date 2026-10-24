@@ -1,0 +1,36 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync,readdirSync} from 'node:fs';
+import {castVote,CAST_SQL,castParams,validId,validateElection} from '../lib/vote.mjs';
+function setup(){
+ const sql=new DatabaseSync(':memory:');sql.exec('PRAGMA foreign_keys=ON');
+ for(const file of readdirSync('drizzle').filter(x=>x.endsWith('.sql')).sort())sql.exec(readFileSync('drizzle/'+file,'utf8'));
+ sql.prepare("INSERT INTO elections VALUES ('E1','owner','Demo','OPEN','2026-10-24')").run();
+ sql.prepare("INSERT INTO candidates VALUES ('E1','C1','Alice'),('E1','C2','Bob')").run();
+ sql.prepare("INSERT INTO eligible VALUES ('E1','V001'),('E1','V002')").run();
+ const adapter={prepare(query){return {bind(...params){return {query,params,async run(){const r=sql.prepare(query).run(...params);return {success:true,meta:{changes:r.changes}};}};}};},async batch(stmts){sql.exec('BEGIN');try{const results=stmts.map(s=>{const p=sql.prepare(s.query);return /^SELECT/i.test(s.query)?{results:p.all(...s.params)}:{meta:p.run(...s.params),results:[]};});sql.exec('COMMIT');return results;}catch(e){sql.exec('ROLLBACK');throw e;}}};
+ const vote=(voter='V001',candidate='C1',request=crypto.randomUUID(),election='E1')=>castVote(adapter,election,{voter,candidate,request});
+ const counts=()=>sql.prepare("SELECT c.id,COUNT(s.id) AS votes FROM candidates c LEFT JOIN submissions s ON s.election=c.election AND s.candidate=c.id AND s.code='ACCEPTED' WHERE c.election='E1' GROUP BY c.id ORDER BY c.id").all().map(x=>({...x}));
+ const accepted=()=>Number(sql.prepare("SELECT COUNT(*) n FROM submissions WHERE code='ACCEPTED'").get().n);
+ return {sql,adapter,vote,counts,accepted};
+}
+test('36 malformed identity values rejected across all arguments',async()=>{const {adapter,sql}=setup();for(const key of ['voter','candidate','request'])for(const value of [null,[],{},true,1,'',' ',' V1','V1 ','a\nb','V001\n','x'.repeat(129)]){const body={voter:'V001',candidate:'C1',request:'R1',[key]:value};await assert.rejects(castVote(adapter,'E1',body),/INVALID_INPUT/);}assert.equal(sql.prepare('SELECT COUNT(*) n FROM submissions').get().n,0);sql.close();});
+test('valid IDs are strict including final newline',()=>{assert.equal(validId('V001'),true);assert.equal(validId('V001\n'),false);assert.equal(validId('V001\r'),false);});
+test('configuration validation with Bengali labels',()=>{assert.deepEqual(validateElection({title:' Test ',candidates:['আবির','করিম'],voters:['V1','V2']}).candidates,['আবির','করিম']);});
+test('bad configuration and duplicate rosters rejected',()=>{for(const body of [null,{}, {title:'',candidates:['A','B'],voters:['V1']},{title:'T',candidates:['A','A'],voters:['V1']},{title:'T',candidates:['A','B'],voters:['V1','V1']},{title:'T',candidates:['A','B'],voters:[]},{title:'T',candidates:'A',voters:['V1']},{title:'T',candidates:['A','B'],voters:['V1\n']}])assert.throws(()=>validateElection(body));});
+test('valid ballot and zero-vote candidate',async()=>{const s=setup();assert.equal((await s.vote()).code,'ACCEPTED');assert.deepEqual(s.counts(),[{id:'C1',votes:1},{id:'C2',votes:0}]);s.sql.close();});
+test('duplicate cannot change count',async()=>{const s=setup();await s.vote();assert.equal((await s.vote('V001','C2')).code,'ALREADY_VOTED');assert.equal(s.accepted(),1);s.sql.close();});
+test('invalid candidate does not consume eligibility',async()=>{const s=setup();assert.equal((await s.vote('V001','WRONG')).code,'INVALID_CANDIDATE');assert.equal((await s.vote()).code,'ACCEPTED');s.sql.close();});
+test('ineligible voter rejected',async()=>{const s=setup();assert.equal((await s.vote('UNKNOWN')).code,'NOT_ELIGIBLE');assert.equal(s.accepted(),0);s.sql.close();});
+test('exact retry returns same receipt once',async()=>{const s=setup();const first=await s.vote('V001','C1','R1');assert.deepEqual(await s.vote('V001','C1','R1'),first);assert.equal(s.sql.prepare('SELECT COUNT(*) n FROM submissions').get().n,1);s.sql.close();});
+test('payload change conflicts and audit hides candidate',async()=>{const s=setup();await s.vote('V001','C1','R1');assert.equal((await s.vote('V001','C2','R1')).code,'REQUEST_CONFLICT');const audit=s.sql.prepare('SELECT * FROM events').get();assert.equal(audit.code,'REQUEST_CONFLICT');assert.equal('candidate' in audit,false);assert.equal(s.accepted(),1);s.sql.close();});
+test('rejected request stable, new ID allows correction',async()=>{const s=setup();const first=await s.vote('V001','X','R1');assert.deepEqual(await s.vote('V001','X','R1'),first);assert.equal((await s.vote('V001','C1','R1')).code,'REQUEST_CONFLICT');assert.equal((await s.vote('V001','C1','R2')).code,'ACCEPTED');s.sql.close();});
+test('closing stops new ballots but preserves retry',async()=>{const s=setup();const first=await s.vote('V001','C1','R1');s.sql.exec("UPDATE elections SET state='CLOSED' WHERE id='E1'");assert.deepEqual(await s.vote('V001','C1','R1'),first);assert.equal((await s.vote('V002')).code,'ELECTION_CLOSED');s.sql.close();});
+test('request identity scoped to voter',async()=>{const s=setup();await s.vote('V001','C1','R1');assert.equal((await s.vote('V002','C2','R1')).code,'ACCEPTED');assert.equal(s.accepted(),2);s.sql.close();});
+test('elections isolated',async()=>{const s=setup();s.sql.exec("INSERT INTO elections VALUES ('E2','owner','Other','OPEN','now'); INSERT INTO candidates VALUES ('E2','C1','A'); INSERT INTO eligible VALUES ('E2','V001')");await s.vote();assert.equal((await s.vote('V001','C1','R1','E2')).code,'ACCEPTED');assert.equal(s.accepted(),2);s.sql.close();});
+test('100 concurrent async calls accept one ballot',async()=>{const s=setup();const results=await Promise.all(Array.from({length:100},()=>s.vote()));assert.equal(results.filter(r=>r.accepted).length,1);assert.equal(results.filter(r=>r.code==='ALREADY_VOTED').length,99);assert.equal(s.accepted(),1);s.sql.close();});
+test('20 concurrent retries receive same receipt',async()=>{const s=setup();const r=await Promise.all(Array.from({length:20},()=>s.vote('V001','C1','R1')));assert.equal(new Set(r.map(x=>x.id)).size,1);assert.equal(s.accepted(),1);s.sql.close();});
+test('database unique constraint independently blocks bypass',async()=>{const s=setup();await s.vote();assert.throws(()=>s.sql.prepare("INSERT INTO submissions VALUES ('b','E1','V001','C2','R99','ACCEPTED','now')").run(),/UNIQUE/);s.sql.close();});
+test('failure does not leave partially accepted state',async()=>{const s=setup();s.sql.exec("CREATE TRIGGER fail BEFORE INSERT ON submissions BEGIN SELECT RAISE(ABORT,'injected'); END");await assert.rejects(s.vote(),/injected/);assert.equal(s.accepted(),0);s.sql.close();});
+test('caller mutation cannot alter recorded vote',async()=>{const s=setup();const payload={voter:'V001',candidate:'C1',request:'R1'};await castVote(s.adapter,'E1',payload);payload.candidate='C2';assert.deepEqual(s.counts(),[{id:'C1',votes:1},{id:'C2',votes:0}]);s.sql.close();});
