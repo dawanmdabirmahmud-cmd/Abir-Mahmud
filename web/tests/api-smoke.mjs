@@ -6,7 +6,7 @@ const headers={'oai-authenticated-user-id':'qa-local-owner','oai-authenticated-u
 async function call(path,body,extra={}){const r=await fetch(base+path,{method:body===undefined?'GET':'POST',headers:{...headers,...extra},...(body===undefined?{}:{body:JSON.stringify(body)})});const text=await r.text();let data;try{data=JSON.parse(text);}catch{data={text:text.slice(0,200)}};return {status:r.status,data};}
 const auth=await fetch(base+'/api/elections');assert.equal(auth.status,401);
 assert.equal((await call('/api/elections',{}, {Origin:'https://untrusted.example'})).status,403);
-const created=await call('/api/elections',{title:'Local QA only',candidates:['Alice','Bob'],voters:['V1','V2','V3','V4']});assert.equal(created.status,201,JSON.stringify(created));const id=created.data.id;
+const created=await call('/api/elections',{title:'Local QA only',request:crypto.randomUUID(),candidates:['Alice','Bob'],voters:['V1','V2','V3','V4']});assert.equal(created.status,201,JSON.stringify(created));const id=created.data.id;
 assert.equal((await call('/api/elections/'+id,undefined,{'oai-authenticated-user-id':'other-owner'})).status,404);
 const vote=(voter,candidate,request)=>call('/api/elections/'+id+'/vote',{voter,candidate,request});
 assert.equal((await vote(null,'C1','bad')).status,400);

@@ -42,3 +42,9 @@ Candidate labels can be Bengali or English; stable candidate IDs are generated a
 The audit view shows the latest 100 events only; CSV exports those displayed events. Election selection shows the latest 100 owned elections. Malformed API requests are rejected before a ballot record exists. Exact retries reuse the stored audit event; request conflicts add a separate event. Records persist on the server and survive page reloads. There is no delete or reopen operation.
 
 The `.openai/hosting.json` project identity belongs to the deployed private Site. GitHub is a source mirror; a GitHub push alone does not deploy this Sites app. Publish using the Sites workflow for that project.
+
+## Reliability repair
+
+Election creation now requires a stable `request` ID. Repeating the same owner/request/settings returns the same election; changing settings under the same request returns HTTP 409. The browser retains creation settings and the last vote request in session storage before sending them, so ordinary reloads can retry safely. Browser storage must be available for these safeguards. Fetches have a 20-second deadline; timeout is an uncertain outcome, never an assumed rejection.
+
+Actual JSON bytes are capped at 25,000 even when Content-Length is absent or misleading. The nullable `elections.config` migration preserves old election/vote records. Candidate display order is numeric beyond C9. Attempt totals include request-conflict events.

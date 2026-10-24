@@ -2,7 +2,7 @@ import { sqliteTable, text, primaryKey, uniqueIndex, index } from 'drizzle-orm/s
 import { sql } from 'drizzle-orm';
 export const elections = sqliteTable('elections', {
   id: text('id').primaryKey(), owner: text('owner').notNull(), title: text('title').notNull(),
-  state: text('state').notNull().default('OPEN'), created: text('created').notNull(),
+  state: text('state').notNull().default('OPEN'), created: text('created').notNull(), config: text('config'),
 });
 export const candidates = sqliteTable('candidates', {
   election: text('election').notNull().references(() => elections.id), id: text('id').notNull(), label: text('label').notNull(),

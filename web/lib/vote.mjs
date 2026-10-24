@@ -36,3 +36,6 @@ export async function castVote(db,election,body) {
  }
  return {id:receipt.id,code:receipt.code,accepted:receipt.code==='ACCEPTED',created:receipt.created};
 }
+
+export const COUNT_SQL = `SELECT c.id,c.label,COUNT(s.id) AS votes FROM candidates c LEFT JOIN submissions s ON s.election=c.election AND s.candidate=c.id AND s.code='ACCEPTED' WHERE c.election=? GROUP BY c.id,c.label ORDER BY CAST(SUBSTR(c.id,2) AS INTEGER)`;
+export const STATS_SQL = `SELECT COUNT(*) + (SELECT COUNT(*) FROM events WHERE election=? AND code='REQUEST_CONFLICT') AS attempts, COALESCE(SUM(code='ACCEPTED'),0) AS accepted, COALESCE(SUM(code<>'ACCEPTED'),0) + (SELECT COUNT(*) FROM events WHERE election=? AND code='REQUEST_CONFLICT') AS rejected FROM submissions WHERE election=?`;

@@ -11,3 +11,9 @@
 - Real hosted multi-isolate concurrency, external penetration testing, crash/restore and production election certification: not performed.
 
 The original Python reference has its own separately executed 24-test validation in the repository root.
+
+## Analysis and repair pass
+
+- Added 15 regression checks (34 total) for idempotent election creation, conflicting creation payloads, owner scoping, concurrent creation retries, closed-election replay, migration data preservation, browser retry-state recovery, origin checks, actual streamed-byte limits and cancellation, numeric candidate order and coherent audit totals.
+- Fixed hidden close-dialog errors and added a 20-second client request deadline. These UI changes are source/type checked; authenticated browser interaction remains unverified.
+- Old schema migrations were preserved unchanged; one nullable column was added in a new migration.

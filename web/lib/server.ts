@@ -1,16 +1,12 @@
 import { env } from 'cloudflare:workers';
 import { getChatGPTUser } from '../app/chatgpt-auth';
+import { checkWriteRequest } from './http.mjs';
 export function database() { if(!env.DB) throw new Error('Database binding unavailable'); return env.DB; }
 export function json(data:unknown,status=200) { return Response.json(data,{status,headers:{'Cache-Control':'no-store'}}); }
 export async function authorize(request:Request) {
  const user=await getChatGPTUser();
  if(!user) throw new Response('Sign in required',{status:401});
- if(request.method!=='GET') {
-  const origin=request.headers.get('origin');
-  if(!origin || origin!==new URL(request.url).origin) throw new Response('Origin not allowed',{status:403});
-  const len=Number(request.headers.get('content-length')||0);
-  if(len>25000) throw new Response('Request too large',{status:413});
- }
+ checkWriteRequest(request);
  return user.userId;
 }
 export async function owned(id:string,user:string) {
