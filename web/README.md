@@ -48,3 +48,13 @@ The `.openai/hosting.json` project identity belongs to the deployed private Site
 Election creation now requires a stable `request` ID. Repeating the same owner/request/settings returns the same election; changing settings under the same request returns HTTP 409. The browser retains creation settings and the last vote request in session storage before sending them, so ordinary reloads can retry safely. Browser storage must be available for these safeguards. Fetches have a 20-second deadline; timeout is an uncertain outcome, never an assumed rejection.
 
 Actual JSON bytes are capped at 25,000 even when Content-Length is absent or misleading. The nullable `elections.config` migration preserves old election/vote records. Candidate display order is numeric beyond C9. Attempt totals include request-conflict events.
+
+## Faster workspace and additional controls
+
+The initial page renders the first election snapshot on the server instead of waiting for two client API requests. Switching elections reuses up to eight in-memory snapshots while a fresh snapshot loads; server validation always decides whether a new vote is accepted. Snapshot reads now use one five-statement batch rather than an extra ownership read followed by that batch. New indexes support owner election listing and accepted-candidate counts.
+
+Workspace tools include voter search and participation filters, audit text/status filters, progressive row display, spreadsheet-safe CSV exports for results/audit/roster, candidate ranking, and copying an election's settings into a new form. Copying settings never copies votes or submits a new election automatically. Audit filtering/export still covers only the latest 100 events, as labeled.
+
+Auto-refresh is opt-in at 15 seconds and pauses while the page is hidden, a mutation is active, a refresh is running or a dialog is open. Filters and ranking are local operations without extra API requests. Below-fold tables use progressive rendering and layout containment. Run `node tests/render-smoke.mjs` after installing dependencies for the server-rendered populated/empty/error checks.
+
+There is no measured real-user speed percentage: authentication and live network latency remain environment-dependent. Authenticated browser interaction still needs verification in a signed-in browser.

@@ -80,10 +80,14 @@ The Voter Python Tests workflow runs demo and the full unittest suite on push, p
 
 Live owner-private workspace: https://abir-voter-agent.dawanmdabirmahmud.chatgpt.site
 
-The complete web adaptation is in [`web/`](web/README.md), including its D1 schema, migration, UI, API and 34-test suite. Sign in with the owner ChatGPT account to open the app, then choose **New election**. Use synthetic voter IDs only. This is an admin simulator, not individual voter authentication or a certified secret-ballot system.
+The complete web adaptation is in [`web/`](web/README.md), including its D1 schema, migration, UI, API and 43-test suite. Sign in with the owner ChatGPT account to open the app, then choose **New election**. Use synthetic voter IDs only. This is an admin simulator, not individual voter authentication or a certified secret-ballot system.
 
 The Python implementation above remains runnable from the repository root. The web app uses TypeScript/JavaScript and D1 on Sites; GitHub hosts the source mirror, while Sites hosts the running application. A GitHub push alone does not redeploy the Site. Web validation limits are recorded in `web/VALIDATION.md`.
 
 ### Reliability repair
 
-The deployed web app now preserves retry IDs across ordinary reloads, makes election creation idempotent, enforces the actual JSON byte limit, orders candidates numerically and reconciles conflict events in attempt totals. The web suite has 34 tests; see `web/VALIDATION.md` for execution limits. The new nullable schema migration preserves existing elections and votes.
+The deployed web app now preserves retry IDs across ordinary reloads, makes election creation idempotent, enforces the actual JSON byte limit, orders candidates numerically and reconciles conflict events in attempt totals. The web suite has 43 tests; see `web/VALIDATION.md` for execution limits. The new nullable schema migration preserves existing elections and votes.
+
+### Workspace speed and options
+
+The private web app now server-renders its first election snapshot, caches recent snapshots during election switching, and uses indexed vote counts. New controls include voter search/participation filters, audit search/status filters with progressive display, results/audit/roster CSV exports, candidate ranking, copy-settings and optional 15-second auto-refresh. The logic suite has 43 tests; server rendering checks pass. See `web/VALIDATION.md` for measured structural changes and browser-verification limits.

@@ -15,6 +15,13 @@
       "when": 1792842597751,
       "tag": "0001_glossy_thaddeus_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792849441345,
+      "tag": "0002_medical_black_cat",
+      "breakpoints": true
     }
   ]
 }

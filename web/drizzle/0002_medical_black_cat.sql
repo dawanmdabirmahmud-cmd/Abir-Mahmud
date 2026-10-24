@@ -1,0 +1,2 @@
+CREATE INDEX `elections_owner_created` ON `elections` (`owner`,`created`);--> statement-breakpoint
+CREATE INDEX `accepted_candidate_tally` ON `submissions` (`election`,`candidate`) WHERE "submissions"."code" = 'ACCEPTED';
