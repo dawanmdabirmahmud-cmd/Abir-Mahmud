@@ -1,0 +1,38 @@
+Validation executed 2026-10-24
+Python: 3.12.14
+SQLite: 3.53.1
+OS: Linux
+
+test_100_concurrent_connections (test_agent.AgentTests.test_100_concurrent_connections) ... ok
+test_audit_minimization (test_agent.AgentTests.test_audit_minimization) ... ok
+test_closed (test_agent.AgentTests.test_closed) ... ok
+test_concurrent_retry (test_agent.AgentTests.test_concurrent_retry) ... ok
+test_conflict (test_agent.AgentTests.test_conflict) ... ok
+test_db_constraints (test_agent.AgentTests.test_db_constraints) ... ok
+test_duplicate (test_agent.AgentTests.test_duplicate) ... ok
+test_election_scope (test_agent.AgentTests.test_election_scope) ... ok
+test_failure_rolls_back (test_agent.AgentTests.test_failure_rolls_back) ... ok
+test_ineligible (test_agent.AgentTests.test_ineligible) ... ok
+test_invalid_candidate_preserves_right (test_agent.AgentTests.test_invalid_candidate_preserves_right) ... ok
+test_invalid_setup (test_agent.AgentTests.test_invalid_setup) ... ok
+test_malformed (test_agent.AgentTests.test_malformed) ... ok
+test_multiprocess (test_agent.AgentTests.test_multiprocess) ... ok
+test_mutation_isolated (test_agent.AgentTests.test_mutation_isolated) ... ok
+test_rejected_retry (test_agent.AgentTests.test_rejected_retry) ... ok
+test_request_voter_scope (test_agent.AgentTests.test_request_voter_scope) ... ok
+test_restart (test_agent.AgentTests.test_restart) ... ok
+test_retry (test_agent.AgentTests.test_retry) ... ok
+test_retry_after_close (test_agent.AgentTests.test_retry_after_close) ... ok
+test_unknown_election (test_agent.AgentTests.test_unknown_election) ... ok
+test_unknown_reporting_admin (test_agent.AgentTests.test_unknown_reporting_admin) ... ok
+test_valid_zero_counts (test_agent.AgentTests.test_valid_zero_counts) ... ok
+test_wrong_key (test_agent.AgentTests.test_wrong_key) ... ok
+
+----------------------------------------------------------------------
+Ran 24 tests in 0.599s
+
+OK
+
+Demo: locally executed; Alice=2, Bob=1, Charlie=1. Closed-election rejection verified.
+compileall: passed.
+Not executed: live deployment, Windows test, power-loss, load benchmark, security certification.
